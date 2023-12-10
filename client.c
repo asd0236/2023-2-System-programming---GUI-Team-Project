@@ -68,3 +68,19 @@ int main()
     close(client_socket); // 클라이언트 소켓을 닫습니다.
     return 0;
 }
+
+// Function to send a file
+void send_file(int socket, const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        return;
+    }
+
+    char buffer[MAX_MSG_LEN];
+    while (fgets(buffer, MAX_MSG_LEN, file) != NULL) {
+        send(socket, buffer, strlen(buffer), 0);
+    }
+
+    fclose(file);
+}

@@ -15,48 +15,70 @@ typedef struct
     char username[50];
 } Client;
 
-Client clients[MAX_CLIENTS];                       // 최대 클라이언트 수 만큼의 클라이언트 정보를 저장하는 배열
-int num_clients = 0;                               // 현재 연결된 클라이언트 수
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; // 스레드 간 공유되는 데이터에 접근하기 위한 뮤텍스
+Client clients[MAX_CLIENTS];
+int num_clients = 0;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-// 각 클라이언트와의 통신을 처리하는 스레드 함수
 void *handle_client(void *arg)
 {
-    int client_socket = *((int *)arg); // 클라이언트 소켓 디스크립터를 스레드에서 사용하기 위해 포인터로 형변환
+    int client_socket = *((int *)arg);
     char message[MAX_MSG_LEN];
     ssize_t recv_size;
     char username[50];
 
     while ((recv_size = recv(client_socket, message, sizeof(message), 0)) > 0)
     {
-        message[recv_size] = '\0';
-
-        // 송신자의 사용자 이름 찾기
-        pthread_mutex_lock(&mutex);
-        for (int i = 0; i < num_clients; ++i)
+        // 파일 요청 메시지 확인
+        if (strncmp(message, "REQUEST_FILE:", 13) == 0)
         {
-            if (clients[i].socket == client_socket)
+            char *filename = message + 13; // 메시지에서 파일 이름 추출
+            FILE *file = fopen(filename, "r");
+            if (file == NULL)
             {
-                strcpy(username, clients[i].username);
-                break;
+                perror("파일 열기 실패");
+                continue;
             }
+
+            char file_buffer[MAX_MSG_LEN];
+            while (fgets(file_buffer, MAX_MSG_LEN, file) != NULL)
+            {
+                send(client_socket, file_buffer, strlen(file_buffer), 0);
+            }
+
+            fclose(file); // 파일이 제대로 닫히도록 함
+            continue;     // 루프의 다음 반복으로 이동
         }
-        pthread_mutex_unlock(&mutex);
-
-        // 메시지 앞에 사용자 이름을 추가
-        char formatted_msg[MAX_MSG_LEN + 50];
-        sprintf(formatted_msg, "%s: %s", username, message);
-
-        // 사용자 이름을 포함한 메시지를 모든 클라이언트에게 브로드캐스트
-        pthread_mutex_lock(&mutex);
-        for (int i = 0; i < num_clients; ++i)
+        else
         {
-            if (clients[i].socket != client_socket)
+            message[recv_size] = '\0';
+
+            // 송신자의 사용자 이름 찾기
+            pthread_mutex_lock(&mutex);
+            for (int i = 0; i < num_clients; ++i)
             {
-                send(clients[i].socket, formatted_msg, strlen(formatted_msg), 0);
+                if (clients[i].socket == client_socket)
+                {
+                    strcpy(username, clients[i].username);
+                    break;
+                }
             }
+            pthread_mutex_unlock(&mutex);
+
+            // 메시지 앞에 사용자 이름을 추가
+            char formatted_msg[MAX_MSG_LEN + 50];
+            sprintf(formatted_msg, "%s: %s", username, message);
+
+            // 사용자 이름을 포함한 메시지를 모든 클라이언트에게 브로드캐스트
+            pthread_mutex_lock(&mutex);
+            for (int i = 0; i < num_clients; ++i)
+            {
+                if (clients[i].socket != client_socket)
+                {
+                    send(clients[i].socket, formatted_msg, strlen(formatted_msg), 0);
+                }
+            }
+            pthread_mutex_unlock(&mutex);
         }
-        pthread_mutex_unlock(&mutex);
     }
 
     // 클라이언트가 연결 해제됨
@@ -65,7 +87,7 @@ void *handle_client(void *arg)
     {
         if (clients[i].socket == client_socket)
         {
-            printf("Client '%s' disconnected.\\n", clients[i].username);
+            printf("Client '%s' disconnected.\n", clients[i].username);
 
             // 연결 해제된 클라이언트 제거
             for (int j = i; j < num_clients - 1; ++j)
@@ -111,7 +133,7 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    printf("%d 포트에서 대기 중...\\n", PORT);
+    printf("%d 포트에서 대기 중...\n", PORT);
 
     while (1)
     {
@@ -133,7 +155,7 @@ int main()
             num_clients++;
             pthread_mutex_unlock(&mutex);
 
-            printf("Client '%s'가 연결되었습니다.\\n", username);
+            printf("Client '%s'가 연결되었습니다.\n", username);
 
             pthread_t tid;
             if (pthread_create(&tid, NULL, handle_client, &client_socket) != 0)
@@ -146,7 +168,7 @@ int main()
         }
         else
         {
-            char rejection_msg[] = "서버가 가득 찼습니다. 나중에 다시 시도하세요.\\n";
+            char rejection_msg[] = "서버가 가득 찼습니다. 나중에 다시 시도하세요.\n";
             send(client_socket, rejection_msg, sizeof(rejection_msg), 0);
             close(client_socket);
         }
