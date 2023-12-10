@@ -50,9 +50,23 @@ void *receive_messages(void *arg)
     pthread_exit(NULL);
 }
 
+// 파일 업로드 버튼 콜백 함수
+void upload_file(GtkWidget *widget, gpointer data)
+{
+    // 파일 업로드 로직을 여기에 구현
+    // 현재는 빈 함수로 남겨두었으며, 필요한 로직을 추가해야 함
+}
+
+// 파일 다운로드 버튼 콜백 함수
+void download_file(GtkWidget *widget, gpointer data)
+{
+    // 파일 다운로드 로직을 여기에 구현
+    // 현재는 빈 함수로 남겨두었으며, 필요한 로직을 추가해야 함
+}
+
 int main(int argc, char *argv[])
 {
-    GtkWidget *window, *box, *button, *scroll;
+    GtkWidget *window, *box, *button, *scroll, *upload_button, *download_button; // 파일 업로드 및 다운로드 버튼 추가
     struct sockaddr_in server_addr;
     pthread_t recv_thread;
 
@@ -79,6 +93,16 @@ int main(int argc, char *argv[])
     button = gtk_button_new_with_label("전송");
     g_signal_connect(button, "clicked", G_CALLBACK(send_message), NULL);
     gtk_box_pack_start(GTK_BOX(box), button, FALSE, FALSE, 0);
+
+    // 파일 업로드 버튼 생성
+    upload_button = gtk_button_new_with_label("Upload File");
+    g_signal_connect(upload_button, "clicked", G_CALLBACK(upload_file), NULL);
+    gtk_box_pack_start(GTK_BOX(box), upload_button, FALSE, FALSE, 0);
+
+    // 파일 다운로드 버튼 생성
+    download_button = gtk_button_new_with_label("Download File");
+    g_signal_connect(download_button, "clicked", G_CALLBACK(download_file), NULL);
+    gtk_box_pack_start(GTK_BOX(box), download_button, FALSE, FALSE, 0);
 
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
