@@ -1,3 +1,5 @@
+#define MAX_MSG_LEN 1024
+
 #include <gtk/gtk.h>
 #include <string.h>
 #include <unistd.h>
@@ -5,7 +7,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-GtkWidget *text_view, *entry;
+GtkWidget *text_view, *entry, *window;
 GtkTextBuffer *buffer;
 int client_socket;
 
@@ -51,15 +53,74 @@ void *receive_messages(void *arg)
 }
 
 // 파일 업로드 버튼 콜백 함수
+
+void send_file(int socket, const char *filename)
+{
+    FILE *file = fopen(filename, "r");
+    if (file == NULL)
+    {
+        perror("Error opening file");
+        return;
+    }
+
+    char buffer[MAX_MSG_LEN];
+    while (fgets(buffer, MAX_MSG_LEN, file) != NULL)
+    {
+        send(socket, buffer, strlen(buffer), 0);
+    }
+
+    fclose(file);
+}
 void upload_file(GtkWidget *widget, gpointer data)
 {
-    // 파일 업로드 로직을 여기에 구현
-    // 현재는 빈 함수로 남겨두었으며, 필요한 로직을 추가해야 함
+    GtkWidget *file_chooser;
+    const gchar *file_path;
+
+    // 파일 선택 다이얼로그 생성
+    file_chooser = gtk_file_chooser_dialog_new("파일 선택", GTK_WINDOW(window), GTK_FILE_CHOOSER_ACTION_OPEN,
+                                               "취소", GTK_RESPONSE_CANCEL,
+                                               "열기", GTK_RESPONSE_ACCEPT, NULL);
+
+    // 파일 다이얼로그 실행 및 사용자 선택 확인
+    if (gtk_dialog_run(GTK_DIALOG(file_chooser)) == GTK_RESPONSE_ACCEPT)
+    {
+        // 선택한 파일의 경로를 가져옴
+        file_path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(file_chooser));
+        send_file(client_socket, file_path);
+
+        // 파일 전송 로직을 여기에 추가
+        // file_path를 사용하여 선택한 파일을 열고 서버로 전송하는 등의 작업을 수행
+
+        g_free((gpointer)file_path); // 메모리 해제
+    }
+
+    gtk_widget_destroy(file_chooser);
 }
 
 // 파일 다운로드 버튼 콜백 함수
 void download_file(GtkWidget *widget, gpointer data)
 {
+
+    // Example file request message - you need to adjust this according to your protocol
+    const char *file_request_message = "REQUEST_FILE:example.txt";
+    send(client_socket, file_request_message, strlen(file_request_message), 0);
+
+    // Receiving the file from the server
+    FILE *file = fopen("downloaded_file.txt", "w");
+    if (file == NULL)
+    {
+        perror("Error creating file");
+        return;
+    }
+
+    char buffer[MAX_MSG_LEN];
+    ssize_t bytes_received;
+    while ((bytes_received = recv(client_socket, buffer, MAX_MSG_LEN, 0)) > 0)
+    {
+        fwrite(buffer, sizeof(char), bytes_received, file);
+    }
+
+    fclose(file);
     // 파일 다운로드 로직을 여기에 구현
     // 현재는 빈 함수로 남겨두었으며, 필요한 로직을 추가해야 함
 }
