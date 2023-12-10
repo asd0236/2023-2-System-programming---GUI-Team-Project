@@ -106,7 +106,7 @@ void download_file(GtkWidget *widget, gpointer data)
     send(client_socket, file_request_message, strlen(file_request_message), 0);
 
     // Receiving the file from the server
-    FILE *file = fopen("downloaded_file.txt", "w");
+    FILE *file = fopen("downloaded_file.txt", "wb"); // 이진 모드로 파일 열기
     if (file == NULL)
     {
         perror("Error creating file");
@@ -117,10 +117,10 @@ void download_file(GtkWidget *widget, gpointer data)
     ssize_t bytes_received;
     while ((bytes_received = recv(client_socket, buffer, MAX_MSG_LEN, 0)) > 0)
     {
-        fwrite(buffer, sizeof(char), bytes_received, file);
+        fwrite(buffer, sizeof(char), bytes_received, file); // 데이터를 파일에 기록
     }
 
-    fclose(file);
+    fclose(file); // 파일 닫기
     // 파일 다운로드 로직을 여기에 구현
     // 현재는 빈 함수로 남겨두었으며, 필요한 로직을 추가해야 함
 }

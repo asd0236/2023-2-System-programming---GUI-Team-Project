@@ -29,7 +29,7 @@ void *handle_client(void *arg)
     while ((recv_size = recv(client_socket, message, sizeof(message), 0)) > 0)
     {
         // 파일 요청 메시지 확인
-        if (strncmp(message, "REQUEST_FILE:", 13) == 0)
+        if (strncmp(message, "REQUEST_FILE:testFile.txt", 13) == 0)
         {
             char *filename = message + 13; // 메시지에서 파일 이름 추출
             FILE *file = fopen(filename, "r");
