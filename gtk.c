@@ -1,8 +1,10 @@
 #define MAX_MSG_LEN 1024
 
-#include <gtk/gtk.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <gtk/gtk.h>
 #include <pthread.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -88,9 +90,6 @@ void upload_file(GtkWidget *widget, gpointer data)
         file_path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(file_chooser));
         send_file(client_socket, file_path);
 
-        // 파일 전송 로직을 여기에 추가
-        // file_path를 사용하여 선택한 파일을 열고 서버로 전송하는 등의 작업을 수행
-
         g_free((gpointer)file_path); // 메모리 해제
     }
 
@@ -101,28 +100,28 @@ void upload_file(GtkWidget *widget, gpointer data)
 void download_file(GtkWidget *widget, gpointer data)
 {
 
-    // Example file request message - you need to adjust this according to your protocol
-    const char *file_request_message = "REQUEST_FILE:example.txt";
+    // 파일 요청 메시지
+    const char *file_request_message = "REQUEST_FILE:testFile.txt";
     send(client_socket, file_request_message, strlen(file_request_message), 0);
 
-    // Receiving the file from the server
-    FILE *file = fopen("downloaded_file.txt", "wb"); // 이진 모드로 파일 열기
+    // 서버로부터 파일 데이터 수신
+    char buffer[MAX_MSG_LEN];
+    ssize_t bytes_received;
+
+    FILE *file = fopen("downloaded_file.txt", "w"); // 로컬에 저장할 파일
     if (file == NULL)
     {
         perror("Error creating file");
         return;
     }
 
-    char buffer[MAX_MSG_LEN];
-    ssize_t bytes_received;
-    while ((bytes_received = recv(client_socket, buffer, MAX_MSG_LEN, 0)) > 0)
+    if ((bytes_received = recv(client_socket, buffer, MAX_MSG_LEN, 0)) > 0)
     {
-        fwrite(buffer, sizeof(char), bytes_received, file); // 데이터를 파일에 기록
+        fwrite(buffer, sizeof(char), bytes_received, file); // 파일에 데이터 쓰기
     }
 
-    fclose(file); // 파일 닫기
-    // 파일 다운로드 로직을 여기에 구현
-    // 현재는 빈 함수로 남겨두었으며, 필요한 로직을 추가해야 함
+    fclose(file);
+    fprintf(stdout, "File downloaded successfully.\n");
 }
 
 int main(int argc, char *argv[])

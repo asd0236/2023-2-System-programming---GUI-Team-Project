@@ -32,21 +32,25 @@ void *handle_client(void *arg)
         if (strncmp(message, "REQUEST_FILE:testFile.txt", 13) == 0)
         {
             char *filename = message + 13; // 메시지에서 파일 이름 추출
-            FILE *file = fopen(filename, "r");
+            FILE *file = fopen(filename, "rb"); // "rb" 모드로 변경하여 이진 파일도 다운로드 가능하게 함
             if (file == NULL)
             {
                 perror("파일 열기 실패");
+                fprintf(stderr, "파일 경로: %s\n", filename);
+                send(client_socket, "FILE_NOT_FOUND", strlen("FILE_NOT_FOUND"), 0);
                 continue;
             }
 
             char file_buffer[MAX_MSG_LEN];
-            while (fgets(file_buffer, MAX_MSG_LEN, file) != NULL)
+            ssize_t bytes_read;
+            while ((bytes_read = fread(file_buffer, sizeof(char), MAX_MSG_LEN, file)) > 0)
             {
-                send(client_socket, file_buffer, strlen(file_buffer), 0);
+                send(client_socket, file_buffer, bytes_read, 0);
             }
 
-            fclose(file); // 파일이 제대로 닫히도록 함
-            continue;     // 루프의 다음 반복으로 이동
+            fclose(file);
+            printf("파일 다운로드 완료.\n");
+            continue;
         }
         else
         {
