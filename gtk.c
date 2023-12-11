@@ -90,8 +90,6 @@ void upload_file(GtkWidget *widget, gpointer data)
         file_path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(file_chooser));
         send_file(client_socket, file_path);
 
-
-
         g_free((gpointer)file_path); // 메모리 해제
     }
 
@@ -101,35 +99,30 @@ void upload_file(GtkWidget *widget, gpointer data)
 // 파일 다운로드 버튼 콜백 함수
 void download_file(GtkWidget *widget, gpointer data)
 {
-    
 
     // 파일 요청 메시지
     const char *file_request_message = "REQUEST_FILE:testFile.txt";
     send(client_socket, file_request_message, strlen(file_request_message), 0);
 
-    
-
     // 서버로부터 파일 데이터 수신
     char buffer[MAX_MSG_LEN];
     ssize_t bytes_received;
-    
+
     FILE *file = fopen("downloaded_file.txt", "w"); // 로컬에 저장할 파일
     if (file == NULL)
     {
         perror("Error creating file");
         return;
     }
-    
+
     if ((bytes_received = recv(client_socket, buffer, MAX_MSG_LEN, 0)) > 0)
     {
         fwrite(buffer, sizeof(char), bytes_received, file); // 파일에 데이터 쓰기
     }
-    
+
     fclose(file);
     fprintf(stdout, "File downloaded successfully.\n");
 }
-
-
 
 int main(int argc, char *argv[])
 {

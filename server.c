@@ -31,7 +31,7 @@ void *handle_client(void *arg)
         // 파일 요청 메시지 확인
         if (strncmp(message, "REQUEST_FILE:", 13) == 0)
         {
-            char *filename = message + 13; // 메시지에서 파일 이름 추출
+            char *filename = message + 13;      // 메시지에서 파일 이름 추출
             FILE *file = fopen(filename, "rb"); // "rb" 모드로 변경하여 이진 파일도 다운로드 가능하게 함
             if (file == NULL)
             {
